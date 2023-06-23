@@ -55,6 +55,57 @@ function ConvertTo-EscapedCommandLine(
 }
 
 
+
+function Set-EnvVariablesAndRun(
+    [parameter(ValueFromRemainingArguments)]
+    $VarsOrCommandLine
+) {
+    begin {
+        $vars = @{}
+        $in_command_line = $false
+        $exe = $null
+        $command_line = @()
+        $VarsOrCommandLine | ForEach-Object {
+            $s = "$_"
+            if ((!$in_command_line) -and ($s -ilike '*=*')) {
+                $keyAndValue = $s.split('=', 2)
+                $k = $keyAndValue[0]
+                $v = $keyAndValue[1]
+                $vars.$k = $v
+            } else {
+                if (!$in_command_line) {
+                    $exe = $s
+                    $in_command_line = $true
+                } else {
+                    $command_line += $s
+                }
+            }
+        }
+    }
+    process {
+        foreach ($v in $vars.GetEnumerator() ) {
+            # Write-Warning "setting env var $($v.Name) = $($v.Value)"
+            Set-Item -Path "env:$($v.Name)" -Value $v.Value
+        }
+        if (!$exe) {
+            throw "no executable was extrapolated from command line: $($VarsOrCommandLine -join ' ')"
+        }
+
+        # Write-Warning "runinn: $exe $($command_line -join ' ')"
+
+        & $exe @command_line
+    }
+    end {
+        foreach ($v in $vars.GetEnumerator() ) {
+            $n = $v.Name
+            # Write-Warning "removing env var $n"
+            Remove-Item -Path "env:$n"
+        }
+    }
+}
+Set-Alias -Option AllScope -Scope 'Global' -Force -Name 'env' -Value Set-EnvVariablesAndRun
+
+
 function Select-ProcessInfo {
     # TODO function not tested
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
@@ -113,4 +164,4 @@ function Wait-ProcessInteractive([array] $Process) {
 }
 
 
-Export-ModuleMember -Function *-*
+Export-ModuleMember -Function *-* -Alias *
