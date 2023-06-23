@@ -7,6 +7,54 @@ function Get-CommandLine ([parameter(ValueFromPipeline)][int] $processId = $PID)
 }
 
 
+function ConvertTo-EscapedCommandLine(
+    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)][string] $Str,
+    [Parameter(Mandatory, ParameterSetName = 'posh')][switch] $ForPowershell,
+    [Parameter(Mandatory, ParameterSetName = 'posh2')][switch] $ForPowershell2,
+    [Parameter(Mandatory, ParameterSetName = 'cmd')][switch] $ForCmd,
+    [Parameter(Mandatory, ParameterSetName = 'c')][switch] $ForCLike
+) {
+    $enclosing = @('', '')
+    if ($ForPowershell) {
+        $enclosing = @('''', '''')
+        $replacements = @(
+            ('''', ''''''),
+            ('([\\]*)"', '$1$1\"'),
+            ('', '')
+        )
+    } elseif ($ForPowershell2) {
+        $replacements = @(
+            ('`', '``' ),
+            ('''', '`'''),
+            ('"', '`\"'),
+            ('\$', '`$'),
+            (',', '`,'),
+            (';', '`;'),
+            ('\{', '`{'),
+            ('\}', '`}'),
+            ('\(', '`('),
+            ('\)', '`)'),
+            ('&', '`&'),
+            ('\|', '`|')
+        )
+    } elseif ($ForCmd) {
+        $replacements = @(
+            ('|', '^|')
+        ) # TODO complete
+    } elseif ($ForCLike) {
+        $replacements = @(
+            ('\\', '\\'),
+            ('"', '\"')
+        ) # TODO complete/check
+    }
+    $result = $Str
+    foreach ($repl in $replacements) {
+        $result = $result -replace $repl[0], $repl[1]
+    }
+    return "$($enclosing[0])${result}$($enclosing[1])"
+}
+
+
 function Select-ProcessInfo {
     # TODO function not tested
     [CmdletBinding(DefaultParameterSetName = '__AllParameterSets')]
