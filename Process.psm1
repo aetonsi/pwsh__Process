@@ -11,6 +11,7 @@ function ConvertTo-EscapedCommandLine(
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)][string] $Str,
     [Parameter(Mandatory, ParameterSetName = 'posh')][switch] $ForPowershell,
     [Parameter(Mandatory, ParameterSetName = 'posh2')][switch] $ForPowershell2,
+    [Parameter(Mandatory, ParameterSetName = 'poshesc')][switch] $ForPowershellEncodedCommand,
     [Parameter(Mandatory, ParameterSetName = 'cmd')][switch] $ForCmd,
     [Parameter(Mandatory, ParameterSetName = 'c')][switch] $ForCLike
 ) {
@@ -37,6 +38,10 @@ function ConvertTo-EscapedCommandLine(
             ('&', '`&'),
             ('\|', '`|')
         )
+    } elseif ($ForPowershellEncodedCommand) {
+        $bytes = [System.Text.Encoding]::Unicode.GetBytes($Str)
+        $encodedCommand = [Convert]::ToBase64String($bytes)
+        $replacements = $encodedCommand
     } elseif ($ForCmd) {
         $replacements = @(
             ('|', '^|')
@@ -48,8 +53,14 @@ function ConvertTo-EscapedCommandLine(
         ) # TODO complete/check
     }
     $result = $Str
-    foreach ($repl in $replacements) {
-        $result = $result -replace $repl[0], $repl[1]
+    if ($replacements -is [array]) {
+        # regex replacements
+        foreach ($repl in $replacements) {
+            $result = $result -replace $repl[0], $repl[1]
+        }
+    } else {
+        # take it literally
+        $result = $replacements
     }
     return "$($enclosing[0])${result}$($enclosing[1])"
 }
