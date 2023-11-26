@@ -114,8 +114,9 @@ function Set-EnvVariablesAndRun(
         }
     }
 }
-Set-Alias -Option AllScope -Scope 'Global' -Force -Name 'env' -Value Set-EnvVariablesAndRun
-
+# TODO reinstate this thing when scoop gets fixed:
+# Set-Alias -Option AllScope -Scope 'Global' -Force -Name 'env' -Value Set-EnvVariablesAndRun
+# https://github.com/ScoopInstaller/Scoop/issues/5196
 
 function Select-ProcessInfo {
     # TODO function not tested
