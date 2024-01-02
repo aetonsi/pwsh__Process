@@ -39,6 +39,7 @@ function ConvertTo-EscapedCommandLine(
             ('\|', '`|')
         )
     } elseif ($ForPowershellEncodedCommand) {
+        # TODO use ConvertTo-Base64String
         $bytes = [System.Text.Encoding]::Unicode.GetBytes($Str)
         $encodedCommand = [Convert]::ToBase64String($bytes)
         $replacements = $encodedCommand
